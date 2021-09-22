@@ -1,0 +1,32 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: portfolio-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: portfolio-backend
+  template:
+    metadata:
+      labels:
+        app: portfolio-backend
+    spec:
+      containers:
+        - name: portfolio-backend
+          image: simpa2k/portfolio-backend
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+      restartPolicy: Always
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: portfolio-backend
+spec:
+  ports:
+    - port: 8080
+      protocol: TCP
+  selector:
+    app: portfolio-backend
