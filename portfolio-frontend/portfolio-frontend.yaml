@@ -1,0 +1,73 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: default-conf
+data:
+  default.conf: |
+    upstream backend {
+        server portfolio-backend:8080;
+    }
+
+    server {
+        listen       80;
+        listen  [::]:80;
+        server_name  localhost;
+
+        location / {
+            root   /usr/share/nginx/html;
+            index  index.html index.htm;
+        }
+
+        location /api {
+            proxy_pass http://backend;
+        }
+
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   /usr/share/nginx/html;
+        }
+    }
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: portfolio-frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: portfolio-frontend
+  template:
+    metadata:
+      labels:
+        app: portfolio-frontend
+    spec:
+      containers:
+        - name: portfolio-frontend
+          image: simpa2k/portfolio-frontend
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: config-volume 
+          configMap:
+            name: default-conf
+      restartPolicy: Always
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: portfolio-frontend
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      nodePort: 31000
+  selector:
+    app: portfolio-frontend
