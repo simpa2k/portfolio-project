@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  labels:
+    name: mongo
+spec:
+  ports:
+    - port: 27017
+      targetPort: 27017
+  clusterIP: None
+  selector:
+    role: mongo
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo
+spec:
+  selector:
+    matchLabels:
+      role: mongo
+      environment: test
+  serviceName: "mongo"
+  podManagementPolicy: "Parallel"
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        role: mongo
+        environment: test
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: mongo
+        image: mongo
+        # Remember that the first time you spin up the stateful set, you also need to log into one of the replicas, start mongosh and then initiate the replica set like so: 
+        # rs.initiate({
+        #   _id: "rs0",
+        #   members: [
+        #     { _id: 0, host: "mongo-0.mongo.default.svc.cluster.local" },
+        #     { _id: 1, host: "mongo-1.mongo.default.svc.cluster.local" },
+        #     { _id: 2, host: "mongo-2.mongo.default.svc.cluster.local" }
+        #   ]
+        # })
+        #
+        # Otherwise, you'll get errors with type 'ReplicaSetNoPrimary' when trying to connect to the database.
+        #
+        # It also seems as though you have to run rs.config() each time you start the stateful set for the rs config to be applied again.
+        #
+        # See https://docs.mongodb.com/manual/tutorial/deploy-replica-set/ for more details.
+        command:
+          - mongod
+          - "--replSet"
+          - rs0
+          - "--bind_ip"
+          - localhost,mongo-0.mongo.default.svc.cluster.local,mongo-1.mongo.default.svc.cluster.local,mongo-2.mongo.default.svc.cluster.local
+        ports:
+          - containerPort: 27017
+        volumeMounts:
+          - name: mongo-persistent-storage
+            mountPath: /data/db
+      - name: mongo-sidecar
+        image: cvallance/mongo-k8s-sidecar
+        env:
+          - name: MONGO_SIDECAR_POD_LABELS
+            value: "role=mongo,environment=test"
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-persistent-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+

@@ -18,7 +18,7 @@ data:
             index  index.html index.htm;
         }
 
-        location /api {
+        location /api/message {
             proxy_pass http://backend;
         }
 
@@ -45,7 +45,7 @@ spec:
     spec:
       containers:
         - name: portfolio-frontend
-          image: simpa2k/portfolio-frontend
+          image: portfolio-frontend
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

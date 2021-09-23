@@ -3,7 +3,7 @@ apiVersion: apps/v1
 metadata:
   name: portfolio-backend
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: portfolio-backend
@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: portfolio-backend
-          image: simpa2k/portfolio-backend
+          image: portfolio-backend
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

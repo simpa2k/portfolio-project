@@ -1,0 +1,16 @@
+apiVersion: skaffold/v2beta23
+kind: Config
+build:
+  artifacts:
+    - image: portfolio-backend
+      context: portfolio-backend
+deploy:
+  kubectl:
+    manifests:
+      - portfolio-backend/kubernetes/*
+      - portfolio-mongodb/kubernetes/*
+portForward:
+  - resourceType: deployment
+    resourceName: portfolio-backend
+    port: 8080
+    localPort: 8080
