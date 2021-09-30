@@ -3,12 +3,12 @@ import './App.css';
 import ValidatedForm from './ValidatedForm';
 import { Card, Container, Row, Col, Form, InputGroup, Button } from 'react-bootstrap';
 
-function getMessages(setter) {
-  fetch('/api/message')
+function getMessages(setter, email) {
+  fetch(`/api/message?email=${email}`)
     .then((res) => res.json())
     .then((data) => {
       console.log('Received messages from server:', data);
-      const mapped = data.map((d) => Object.entries(d).map(([key, value]) => <p>{key}: {value}</p>))
+      const mapped = data?.map((d) => Object.entries(d).map(([key, value]) => <p>{key}: {value}</p>))
 
       console.log(mapped)
 
@@ -18,12 +18,22 @@ function getMessages(setter) {
 
 function App() {
   const [data, setData] = React.useState([]);
+  const [email, setEmail] = React.useState([]);
   const [message, setMessage] = React.useState({})
   const [customFieldName, setCustomFieldName] = React.useState("");
   const [customFieldType, setCustomFieldType] = React.useState(null);
   const [customFieldRequired, setCustomFieldRequired] = React.useState(false);
 
   let initialFormGroups = [
+    <Form.Group>
+      <Form.Label>Email</Form.Label>
+      <InputGroup>
+        <Form.Control type="input" placeholder="Email" onChange={(e) => setEmail(e.target.value)} required/>
+        <Form.Control.Feedback type="invalid">
+          Please enter your email.
+        </Form.Control.Feedback>
+      </InputGroup>
+    </Form.Group>,
     <Form.Group>
       <Form.Label>Message</Form.Label>
       <InputGroup>
@@ -37,17 +47,26 @@ function App() {
 
   const [formGroups, setFormGroups] = React.useState(initialFormGroups)
 
-  React.useEffect(() => getMessages(setData), []);
+  React.useEffect(() => getMessages(setData, email), [email]);
 
   const postMessages = () => {
-    const postBody = JSON.stringify(message);
+    const postBody = JSON.stringify({...message, 'email': email});
     console.log(postBody);
+    console.log('Data:', data);
 
-    fetch('/api/message', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: postBody
-    }).then(() => getMessages(setData)); // TODO: Check response
+    if (!data || data.length === 0) {
+      fetch('/api/message', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: postBody
+      }).then(() => getMessages(setData, email)); // TODO: Check response
+    } else {
+      fetch('/api/message', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: postBody
+      }).then(() => getMessages(setData, email)); // TODO: Check response
+    }
   };
 
   const deleteFormField = (i, key) => {
